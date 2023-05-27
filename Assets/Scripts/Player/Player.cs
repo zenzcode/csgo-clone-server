@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Enums;
 using UnityEngine;
 
 namespace Player
@@ -8,5 +9,6 @@ namespace Player
     {
         [HideInInspector] public ushort PlayerId;
         [HideInInspector] public string Username;
+        [HideInInspector] public Team Team = Enums.Team.None;
     }
 }

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Assets;
 using Helper;
 using Manager;
@@ -28,12 +29,22 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         EventHandler.Instance.ClientDisconnected -= EventHandler_ClientDisconnected;
     }
 
+    public Player.Player GetPlayer(ushort clientId)
+    {
+        return _players.First(pair => pair.Value.PlayerId == clientId).Value;
+    }
+
     private void EventHandler_PlayerSetup(ushort clientId, string username)
     {
         if (_players.ContainsKey(clientId))
         {
             //Client is already in list
             return;
+        }
+
+        foreach(var p in _players.Values)
+        {
+            //Todo: Send Spawn Message To Clients
         }
 
         var newPlayer = Instantiate(AssetManager.Instance.LobbyPlayer);
