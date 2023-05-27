@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using Enums;
 using Helper;
 using Riptide;
 using Riptide.Utils;
@@ -15,6 +16,7 @@ namespace Manager
         protected override void Awake()
         {
             base.Awake();
+            DontDestroyOnLoad(this);
             
 #if UNITY_EDITOR
             RiptideLogger.Initialize(Debug.Log, Debug.Log, Debug.LogWarning, Debug.LogError, true);
@@ -24,6 +26,8 @@ namespace Manager
             
             Server = new Server();
             Server.Start(27901, 10);
+            Server.ClientConnected += Server_ClientConnected;
+            Server.ClientDisconnected += Server_ClientDisconnected;
         }
 
         private void FixedUpdate()
@@ -34,7 +38,28 @@ namespace Manager
         private void OnApplicationQuit()
         {
             Server.Stop();
+            Server.ClientConnected -= Server_ClientConnected;
+            Server.ClientDisconnected -= Server_ClientDisconnected;
         }
+
+        private void Server_ClientConnected(object o, ServerConnectedEventArgs eventArgs)
+        {
+            //TODO: setup team
+        }
+
+        private void Server_ClientDisconnected(object o, ServerDisconnectedEventArgs eventArgs)
+        {
+            EventHandler.Instance.CallClientDisconnected(eventArgs.Client.Id);
+        }
+
+        [MessageHandler((ushort)ClientToServerMessages.Username)]
+        private static void UsernameReceived(ushort sender, Message message)
+        {
+
+            var username = message.GetString();
+            EventHandler.Instance.CallPlayerSetupReceived(sender, username);
+        }
+
     }  
 }
 
