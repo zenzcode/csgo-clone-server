@@ -15,11 +15,22 @@ namespace Manager
         protected override void Awake()
         {
             base.Awake();
+            DontDestroyOnLoad(this);
             _teamMembers = new Dictionary<Team, List<ushort>>
             {
                 { Team.Attacker, new List<ushort>() },
                 { Team.Defender, new List<ushort>() }
             };
+        }
+
+        private void OnEnable()
+        {
+            EventHandler.Instance.ClientDisconnected += EventHandler_ClientDisconnected;
+        }
+
+        private void OnDisable()
+        {
+            EventHandler.Instance.ClientDisconnected -= EventHandler_ClientDisconnected;
         }
 
         public void AddPlayer(ushort clientId)
@@ -56,13 +67,37 @@ namespace Manager
             SendTeamSetMessage(clientId, joinedTeam);
         }
 
+        private void EventHandler_ClientDisconnected(ushort clientId)
+        {
+            //Inform clients about player leaving
+            RemoveFromAllTeams(clientId);
+            SendTeamSetMessage(clientId, Team.None);
+        }
+
+        private void RemoveFromAllTeams(ushort playerId)
+        {
+            foreach(var team in _teamMembers.Keys)
+            {
+                if (_teamMembers[team].Remove(playerId))
+                {
+                    var player = PlayerManager.Instance.GetPlayer(playerId);
+                    if (player)
+                    {
+                        player.Team = Team.None;
+                    }
+                }
+            }
+        }
+
         private void SendTeamSetMessage(ushort receiver, ushort client, Team team)
         {
+            Debug.Log("SEND MESSAGE TO RECEIVER");
             NetworkManager.Instance.Server.Send(TeamSetMessage(client, team), receiver);
         }
 
         private void SendTeamSetMessage(ushort clientId, Team team)
         {
+            Debug.Log("SEND MESSAGE TO EVERYONE");
             NetworkManager.Instance.Server.SendToAll(TeamSetMessage(clientId, team));
         }
 
