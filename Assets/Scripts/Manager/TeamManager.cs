@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Enums;
 using Helper;
 using Riptide;
+using UnityEditor.PackageManager;
 using UnityEngine;
 
 namespace Manager
@@ -29,6 +30,14 @@ namespace Manager
                 return;
             }
 
+            foreach (var team in _teamMembers.Keys)
+            {
+                foreach (var member in _teamMembers[team])
+                {
+                    SendTeamSetMessage(clientId, member, team);
+                }
+            }
+
             var joinedTeam = Team.None;
 
             if (GetPlayerCount(Team.Attacker) >= GetPlayerCount(Team.Defender))
@@ -47,12 +56,22 @@ namespace Manager
             SendTeamSetMessage(clientId, joinedTeam);
         }
 
+        private void SendTeamSetMessage(ushort receiver, ushort client, Team team)
+        {
+            NetworkManager.Instance.Server.Send(TeamSetMessage(client, team), receiver);
+        }
+
         private void SendTeamSetMessage(ushort clientId, Team team)
         {
+            NetworkManager.Instance.Server.SendToAll(TeamSetMessage(clientId, team));
+        }
+
+        private Message TeamSetMessage(ushort id, Team team)
+        {
             var message = Message.Create(MessageSendMode.Reliable, (ushort)Enums.ServerToClientMessages.TeamSet);
-            message.AddUShort(clientId);
+            message.AddUShort(id);
             message.AddUShort((ushort)team);
-            NetworkManager.Instance.Server.SendToAll(message);
+            return message;
         }
 
         private int GetPlayerCount(Team team)
