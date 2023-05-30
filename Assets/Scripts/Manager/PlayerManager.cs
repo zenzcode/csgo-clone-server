@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using Assets;
 using Enums;
 using Helper;
@@ -33,7 +34,7 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
 
     public Player.Player GetPlayer(ushort clientId)
     {
-        return _players.First(pair => pair.Value.PlayerId == clientId).Value;
+        return _players.Values.FirstOrDefault(p => p.PlayerId == clientId);
     }
 
     private void EventHandler_PlayerSetup(ushort clientId, string username)
@@ -59,6 +60,7 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
 
         player.PlayerId = clientId;
         player.Username = username;
+        player.IsLeader = !_players.Values.Any(p => p.IsLeader);
         newPlayer.name = $"{player.Username} ({player.PlayerId})";
         _players.Add(clientId, player);
         SendSpawnMessage(player);
@@ -80,7 +82,23 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         var message = Message.Create(MessageSendMode.Reliable, (ushort)ServerToClientMessages.SpawnClient);
         message.AddUShort(player.PlayerId);
         message.AddString(player.Username);
+        message.AddBool(player.IsLeader);
         return message;
+    }
+
+    private void SetNewLeader(ushort oldLeaderId)
+    {
+        var newLeader = _players.Values.FirstOrDefault(p => !p.IsLeader);
+        if (!newLeader)
+        {
+            return;
+        }
+
+        Debug.Log(newLeader);
+        var message = Message.Create(MessageSendMode.Reliable, (ushort)ServerToClientMessages.LeaderChanged);
+        message.AddUShort(oldLeaderId); 
+        message.AddUShort(newLeader.PlayerId);
+        NetworkManager.Instance.Server.SendToAll(message);
     }
 
     private void EventHandler_ClientDisconnected(ushort clientId)
@@ -89,7 +107,15 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         {
             return;
         }
-        Destroy(_players[clientId].gameObject);
+        var player = _players[clientId];
+
+        if (player.IsLeader)
+        {
+            SetNewLeader(clientId);
+            player.IsLeader = false;
+        }
+        
+        Destroy(player.gameObject);
         _players.Remove(clientId);
     }
 }
