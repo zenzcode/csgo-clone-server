@@ -51,7 +51,7 @@ namespace Manager
 
             var joinedTeam = Team.None;
 
-            if (GetPlayerCount(Team.Attacker) >= GetPlayerCount(Team.Defender))
+            if (GetPlayerCount(Team.Defender) >= GetPlayerCount(Team.Attacker))
             {
                 joinedTeam = Team.Attacker;
                 _teamMembers[joinedTeam].Add(clientId);
