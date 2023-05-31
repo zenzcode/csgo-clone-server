@@ -89,6 +89,19 @@ namespace Manager
             }
         }
 
+        public Team GetTeam(ushort clientId)
+        {
+            foreach (var team in _teamMembers.Keys)
+            {
+                if (_teamMembers[team].Contains(clientId))
+                {
+                    return team;
+                }
+            }
+
+            return Team.None;
+        }
+
         private void SendTeamSetMessage(ushort receiver, ushort client, Team team)
         {
             Debug.Log("SEND MESSAGE TO RECEIVER");
@@ -112,6 +125,43 @@ namespace Manager
         private int GetPlayerCount(Team team)
         {
             return _teamMembers[team]?.Count ?? 0;
+        }
+
+        [MessageHandler((ushort)ClientToServerMessages.SwitchTeamRequest)]
+        private static void SwitchTeamRequest(ushort senderId, Message message)
+        {
+            Instance.HandleSwitchRequest(senderId);
+        }
+
+        private void HandleSwitchRequest(ushort playerId)
+        {
+            var team = GetTeam(playerId);
+
+            switch (team)
+            {
+                case Team.Attacker:
+                    TrySwitchTo(playerId, Team.Attacker);
+                    break;
+                case Team.Defender:
+                    TrySwitchTo(playerId, Team.Defender);
+                    break;
+                case Team.None:
+                    AddPlayer(playerId);
+                    break;
+            }
+        }
+
+        private void TrySwitchTo(ushort playerId, Team currentTeam)
+        {
+            if (currentTeam == Team.Attacker && GetPlayerCount(Team.Defender) > 0)
+            {
+                SendTeamSetMessage(playerId, Team.Defender);
+            }
+            else if (currentTeam == Team.Defender && GetPlayerCount(Team.Attacker) > 0)
+            {
+
+                SendTeamSetMessage(playerId, Team.Attacker);
+            }
         }
     }
 
