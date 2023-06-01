@@ -70,8 +70,29 @@ namespace Manager
         private void EventHandler_ClientDisconnected(ushort clientId)
         {
             //Inform clients about player leaving
-            RemoveFromAllTeams(clientId);
-            SendTeamSetMessage(clientId, Team.None);
+            PlayerLeft(clientId);
+        }
+
+        private void PlayerLeft(ushort playerId)
+        {
+            var team = GetTeam(playerId);
+            RemoveFromAllTeams(playerId);
+            SendTeamSetMessage(playerId, Team.None);
+
+            if (GetPlayerCount(team) > 0)
+            {
+                return;
+            }
+
+            var otherTeam = team == Team.Attacker ? Team.Defender : Team.Attacker;
+
+            if ((team == Team.Attacker && GetPlayerCount(otherTeam) > 1) ||
+                (team == Team.Defender && GetPlayerCount(otherTeam) > 1))
+            {
+                var randomPlayerToMove = _teamMembers[otherTeam][Random.Range(0, _teamMembers[otherTeam].Count)];
+                RemoveFromAllTeams(randomPlayerToMove);
+                SetTeam(randomPlayerToMove, team);
+            }
         }
 
         private void RemoveFromAllTeams(ushort playerId)
@@ -122,6 +143,18 @@ namespace Manager
             return message;
         }
 
+        private void SetTeam(ushort playerId, Team team)
+        {
+            _teamMembers[team].Add(playerId);
+            var player = PlayerManager.Instance.GetPlayer(playerId);
+            if (!player)
+            {
+                return;
+            }
+            player.Team = team;
+            SendTeamSetMessage(playerId, team);
+        }
+
         private int GetPlayerCount(Team team)
         {
             return _teamMembers[team]?.Count ?? 0;
@@ -140,10 +173,8 @@ namespace Manager
             switch (team)
             {
                 case Team.Attacker:
-                    TrySwitchTo(playerId, Team.Attacker);
-                    break;
                 case Team.Defender:
-                    TrySwitchTo(playerId, Team.Defender);
+                    TrySwitchTo(playerId, team);
                     break;
                 case Team.None:
                     AddPlayer(playerId);
@@ -153,14 +184,15 @@ namespace Manager
 
         private void TrySwitchTo(ushort playerId, Team currentTeam)
         {
-            if (currentTeam == Team.Attacker && GetPlayerCount(Team.Defender) > 0)
+            if (currentTeam == Team.Attacker && GetPlayerCount(Team.Attacker) > 1)
             {
-                SendTeamSetMessage(playerId, Team.Defender);
+                RemoveFromAllTeams(playerId);
+                SetTeam(playerId, Team.Defender);
             }
-            else if (currentTeam == Team.Defender && GetPlayerCount(Team.Attacker) > 0)
+            else if (currentTeam == Team.Defender && GetPlayerCount(Team.Defender) > 1)
             {
-
-                SendTeamSetMessage(playerId, Team.Attacker);
+                RemoveFromAllTeams(playerId);
+                SetTeam(playerId, Team.Attacker);
             }
         }
     }
