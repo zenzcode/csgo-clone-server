@@ -54,6 +54,16 @@ namespace Manager
             TeamManager.Instance.AddPlayer(sender);
         }
 
+        [MessageHandler((ushort)ClientToServerMessages.RequestRTT)]
+        private static void RttRequest(ushort sender, Message message)
+        {
+            var response = Message.Create(MessageSendMode.Unreliable, (ushort)ServerToClientMessages.RTTAnswer);
+            //TODO: Add Tick later to recognize lost package.
+            //TODO: Add server time to calculate client/server time delta?
+            response.AddFloat(message.GetFloat());
+            Instance.Server.Send(response, sender);
+        }
+
     }  
 }
 
