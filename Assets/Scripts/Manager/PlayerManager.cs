@@ -37,6 +37,11 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         return _players.Values.FirstOrDefault(p => p.PlayerId == clientId);
     }
 
+    public Player.Player GetCurrentLeader()
+    {
+        return _players.FirstOrDefault(player => player.Value.IsLeader).Value;
+    }
+
     private void EventHandler_PlayerSetup(ushort clientId, string username)
     {
         if (_players.ContainsKey(clientId))
@@ -83,6 +88,7 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         message.AddUShort(player.PlayerId);
         message.AddString(player.Username);
         message.AddBool(player.IsLeader);
+        message.AddFloat(player.LastKnownRtt);
         return message;
     }
 
@@ -93,6 +99,8 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         {
             return;
         }
+
+        newLeader.IsLeader = true;
 
         Debug.Log(newLeader);
         var message = Message.Create(MessageSendMode.Reliable, (ushort)ServerToClientMessages.LeaderChanged);

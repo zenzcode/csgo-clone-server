@@ -23,7 +23,6 @@ namespace Manager
 #else
             RiptideLogger.Initialize(Debug.Log, true);
 #endif
-            
             Server = new Server();
             Server.Start(27901, 10);
             Server.ClientDisconnected += Server_ClientDisconnected;
@@ -43,6 +42,14 @@ namespace Manager
         private void Server_ClientDisconnected(object o, ServerDisconnectedEventArgs eventArgs)
         {
             EventHandler.Instance.CallClientDisconnected(eventArgs.Client.Id);
+        }
+
+        private void SendRttUpdateMessage(ushort clientId, float rtt)
+        {
+            var message = Message.Create(MessageSendMode.Unreliable, (ushort)ServerToClientMessages.RTTUpdate);
+            message.AddUShort(clientId);
+            message.AddFloat(rtt);
+            Server.SendToAll(message);
         }
 
         [MessageHandler((ushort)ClientToServerMessages.Username)]
@@ -65,6 +72,38 @@ namespace Manager
             Instance.Server.Send(response, sender);
         }
 
+        [MessageHandler((ushort)ClientToServerMessages.RTTUpdate)]
+        private static void RttUpdated(ushort senderId, Message message)
+        {
+            var newRtt = message.GetFloat();
+            var player = PlayerManager.Instance.GetPlayer(senderId);
+            if (!player)
+                return;
+            
+            player.LastKnownRtt = newRtt;
+            Instance.SendRttUpdateMessage(senderId, newRtt);
+        }
+
+        [MessageHandler((ushort)ClientToServerMessages.KickRequest)]
+        private static void KickRequest(ushort sender, Message message)
+        {
+            var kickedId = message.GetUShort();
+            var currentLeader = PlayerManager.Instance.GetCurrentLeader();
+
+            if (!currentLeader)
+            {
+                Debug.Log("There is no current leader");
+                return;
+            }
+
+            if (sender != currentLeader.PlayerId && sender != kickedId)
+            {
+                Debug.Log($"Either {sender} is not the current leader ({currentLeader.PlayerId}) or we try to kick ourself ({kickedId})");
+                return;
+            }
+
+            Instance.Server.DisconnectClient(kickedId);
+        }
     }  
 }
 

@@ -11,5 +11,6 @@ namespace Player
         [HideInInspector] public string Username;
         [HideInInspector] public Team Team = Enums.Team.None;
         [HideInInspector] public bool IsLeader = false;
+        [HideInInspector] public float LastKnownRtt = 1;
     }
 }
