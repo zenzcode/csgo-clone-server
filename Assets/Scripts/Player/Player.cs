@@ -9,6 +9,7 @@ namespace Player
     {
         [HideInInspector] public ushort PlayerId;
         [HideInInspector] public string Username;
+        [HideInInspector] public string InitialUsername;
         [HideInInspector] public Team Team = Enums.Team.None;
         [HideInInspector] public bool IsLeader = false;
         [HideInInspector] public float LastKnownRtt = 1;

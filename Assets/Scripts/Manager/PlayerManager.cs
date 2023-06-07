@@ -64,11 +64,23 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         }
 
         player.PlayerId = clientId;
-        player.Username = username;
+        player.InitialUsername = username;
+        player.Username = GetUniqueUsername(username);
         player.IsLeader = !_players.Values.Any(p => p.IsLeader);
         newPlayer.name = $"{player.Username} ({player.PlayerId})";
         _players.Add(clientId, player);
         SendSpawnMessage(player);
+    }
+
+    private string GetUniqueUsername(string username)
+    {
+        var numOfOccurences = _players.Values.Count(player => player.InitialUsername.Equals(username));
+        if (numOfOccurences > 0)
+        {
+            return $"{username} ({numOfOccurences})";
+        }
+
+        return username;
     }
 
     private void SendSpawnMessage(Player.Player player)
