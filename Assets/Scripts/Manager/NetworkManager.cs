@@ -13,6 +13,8 @@ namespace Manager
     {
         public Server Server { get; private set; }
 
+        private float _startupTime;
+
         protected override void Awake()
         {
             base.Awake();
@@ -26,6 +28,11 @@ namespace Manager
             Server = new Server();
             Server.Start(27901, 10);
             Server.ClientDisconnected += Server_ClientDisconnected;
+        }
+
+        private void Start()
+        {
+            _startupTime = Time.timeSinceLevelLoad;
         }
 
         private void FixedUpdate()
@@ -67,7 +74,7 @@ namespace Manager
             var response = Message.Create(MessageSendMode.Unreliable, (ushort)ServerToClientMessages.RTTAnswer);
             //TODO: Add Tick later to recognize lost package.
             response.AddFloat(message.GetFloat());
-            response.AddFloat(Time.realtimeSinceStartup);
+            response.AddFloat(Instance._startupTime);
             response.AddFloat(Time.timeSinceLevelLoad);
             Instance.Server.Send(response, sender);
         }
