@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using Assets;
 using Enums;
 using Helper;
@@ -12,11 +13,13 @@ using UnityEngine;
 public class PlayerManager : SingletonMonoBehavior<PlayerManager>
 {
     private Dictionary<ushort, Player.Player> _players;
+    private Dictionary<string, Dictionary<int, Player.Player>> _usedNicks;
 
     protected override void Awake()
     {
         base.Awake();
         _players = new Dictionary<ushort, Player.Player>();
+        _usedNicks = new Dictionary<string, Dictionary<int, Player.Player>>();
         DontDestroyOnLoad(this);
     }
 
@@ -64,23 +67,55 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         }
 
         player.PlayerId = clientId;
+        player.Username = GetUniqueUsername(username, player);
         player.InitialUsername = username;
-        player.Username = GetUniqueUsername(username);
         player.IsLeader = !_players.Values.Any(p => p.IsLeader);
         newPlayer.name = $"{player.Username} ({player.PlayerId})";
         _players.Add(clientId, player);
         SendSpawnMessage(player);
     }
 
-    private string GetUniqueUsername(string username)
+    private string GetUniqueUsername(string username, Player.Player player)
     {
         var numOfOccurences = _players.Values.Count(player => player.InitialUsername.Equals(username));
         if (numOfOccurences > 0)
         {
-            return $"{username} ({numOfOccurences})";
+            var num = numOfOccurences;
+            if (_usedNicks.ContainsKey(username))
+            {
+                foreach (var keyvalue in _usedNicks[username])
+                {
+                    if (keyvalue.Value == null)
+                    {
+                        num = keyvalue.Key;
+                    }
+                }
+            }
+            AddToUsedNicks(num, player, username);
+            return $"{username} ({num})";
         }
 
         return username;
+    }
+
+    private void AddToUsedNicks(int numOfOccurences, Player.Player player, string username)
+    {
+        if(_usedNicks.ContainsKey(username))
+        {
+            if (!_usedNicks[username].ContainsKey(numOfOccurences))
+            {
+                _usedNicks[username].Add(numOfOccurences, player);
+            }
+            else
+            {
+                _usedNicks[username][numOfOccurences] = player;
+            }
+        }
+        else
+        {
+            _usedNicks.Add(username, new Dictionary<int, Player.Player>());
+            _usedNicks[username].Add(numOfOccurences, player);
+        }
     }
 
     private void SendSpawnMessage(Player.Player player)
@@ -114,7 +149,6 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
 
         newLeader.IsLeader = true;
 
-        Debug.Log(newLeader);
         var message = Message.Create(MessageSendMode.Reliable, (ushort)ServerToClientMessages.LeaderChanged);
         message.AddUShort(oldLeaderId); 
         message.AddUShort(newLeader.PlayerId);
@@ -128,6 +162,23 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
             return;
         }
         var player = _players[clientId];
+
+        if(_usedNicks.ContainsKey(player.InitialUsername))
+        {
+            var kvp = _usedNicks[player.InitialUsername].FirstOrDefault(keyvalue => keyvalue.Value == player);
+            if(kvp.Value == null)
+            {
+                return;
+            }
+            var num = kvp.Key;
+            _usedNicks[player.InitialUsername][num] = null;
+
+            //remove if no more duplicates
+            if (!_usedNicks[player.InitialUsername].Any(kvp => kvp.Value != null))
+            {
+                _usedNicks.Remove(player.InitialUsername);
+            }
+        }
 
         if (player.IsLeader)
         {
