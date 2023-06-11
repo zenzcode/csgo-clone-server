@@ -12,6 +12,11 @@ namespace Maps.SpawnPoint
 
         public bool IsOccupied => _isOccupied;
         public Team Team => _team;
+
+        public void SetOccupied(bool occupied)
+        {
+            _isOccupied = occupied;
+        }
     }
 
 }

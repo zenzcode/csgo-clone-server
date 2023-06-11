@@ -19,15 +19,19 @@ namespace Managers
             {
                 if(player.Team == Enums.Team.Attacker)
                 {
-                    var spawnpoint = AttackerSpawnPoints.FirstOrDefault(spawnpoint => !spawnpoint.IsOccupied);
-                    var spawnPos = spawnpoint.gameObject.transform.position + new Vector3(0f, player.PlayerHeight, 0f);
+                    var availableSpawnPoints = AttackerSpawnPoints.Where(spawnpoint => !spawnpoint.IsOccupied).ToList();
+                    var spawnPoint = availableSpawnPoints[Random.Range(0, availableSpawnPoints.Count - 1)];
+                    var spawnPos = spawnPoint.gameObject.transform.position + new Vector3(0f, player.PlayerHeight, 0f);
                     player.gameObject.transform.position = spawnPos;
+                    spawnPoint.SetOccupied(true);
                 }
                 else if(player.Team == Enums.Team.Defender)
                 {
-                    var spawnpoint = DefenderSpawnPoints.FirstOrDefault(spawnpoint => !spawnpoint.IsOccupied);
-                    var spawnPos = spawnpoint.gameObject.transform.position + new Vector3(0f, player.PlayerHeight, 0f);
+                    var availableSpawnPoints = DefenderSpawnPoints.Where(spawnpoint => !spawnpoint.IsOccupied).ToList();
+                    var spawnPoint = availableSpawnPoints[Random.Range(0, availableSpawnPoints.Count - 1)];
+                    var spawnPos = spawnPoint.gameObject.transform.position + new Vector3(0f, player.PlayerHeight, 0f);
                     player.gameObject.transform.position = spawnPos;
+                    spawnPoint.SetOccupied(true);
                 }
 
                 Instantiate(AssetManager.Instance.GamePlayer, player.transform);
