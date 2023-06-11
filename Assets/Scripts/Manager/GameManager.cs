@@ -4,6 +4,8 @@ using Enums;
 using UnityEngine;
 using Helper;
 using Riptide;
+using Maps;
+using UnityEngine.SceneManagement;
 
 namespace Manager
 {
@@ -14,6 +16,11 @@ namespace Manager
         private bool _isTimerRunning = false;
         [SerializeField] private int WarmupTime = 10;
         private float _remainingSeconds;
+
+        [SerializeField] private MapSO _map;
+
+        private Timer _runningTimer = Timer.None;
+
 
         [MessageHandler((ushort)ClientToServerMessages.StartGameTimer)]
         private static void StartTimerRequest(ushort senderId, Message message)
@@ -58,6 +65,8 @@ namespace Manager
 
             NetworkManager.Instance.Server.SendToAll(message);
             _isTimerRunning = true;
+            _runningTimer = timer;
+            SceneManager.LoadSceneAsync(_map.PathToMap, LoadSceneMode.Additive);
         }
 
         private void Update()
@@ -71,8 +80,34 @@ namespace Manager
             if(_remainingSeconds <= 0)
             {
                 _isTimerRunning = false;
-                Debug.Log("TIMER COMPLETE");
+                HandleTimerComplete();
+                EventHandler.Instance.CallTimerFinished(_runningTimer);
+                SetGameState(GameState.Warmup);
+                _runningTimer = Timer.None;
             }
+        }
+
+        private void SetGameState(GameState newState)
+        {
+            State = newState;
+            var message = Message.Create(MessageSendMode.Reliable, (ushort)ServerToClientMessages.GameStateUpdated);
+            message.AddUShort((ushort)newState);
+            NetworkManager.Instance.Server.SendToAll(message);
+        }
+
+        private void HandleTimerComplete()
+        {
+            if(_runningTimer == Timer.WarmupTimer)
+            {
+                TravelTo(_map.PathToMap);
+            }
+        }
+
+        private void TravelTo(string level)
+        {
+            var message = Message.Create(MessageSendMode.Reliable, (ushort)ServerToClientMessages.Travel);
+            message.AddString(level);
+            NetworkManager.Instance.Server.SendToAll(message);
         }
     }
 

@@ -7,12 +7,14 @@ using Assets;
 using Enums;
 using Helper;
 using Manager;
+using Player;
 using Riptide;
 using UnityEngine;
 
 public class PlayerManager : SingletonMonoBehavior<PlayerManager>
 {
     private Dictionary<ushort, Player.Player> _players;
+    [HideInInspector] public Dictionary<ushort, Player.Player> Players => _players;
     private Dictionary<string, Dictionary<int, Player.Player>> _usedNicks;
 
     protected override void Awake()
@@ -20,7 +22,6 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         base.Awake();
         _players = new Dictionary<ushort, Player.Player>();
         _usedNicks = new Dictionary<string, Dictionary<int, Player.Player>>();
-        DontDestroyOnLoad(this);
     }
 
     private void OnEnable()
@@ -78,6 +79,7 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
     private string GetUniqueUsername(string username, Player.Player player)
     {
         var numOfOccurences = _players.Values.Count(player => player.InitialUsername.Equals(username));
+        Debug.Log($"{numOfOccurences} occurences from {_players.Count} players");
         if (numOfOccurences > 0)
         {
             var num = numOfOccurences;
@@ -131,7 +133,7 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
 
     private Message SpawnMessage(Player.Player player)
     {
-        var message = Message.Create(MessageSendMode.Reliable, (ushort)ServerToClientMessages.SpawnClient);
+        var message = Message.Create(MessageSendMode.Reliable, (ushort)ServerToClientMessages.SpawnLobbyClient);
         message.AddUShort(player.PlayerId);
         message.AddString(player.Username);
         message.AddBool(player.IsLeader);
@@ -188,5 +190,42 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         
         Destroy(player.gameObject);
         _players.Remove(clientId);
+    }
+
+
+    [MessageHandler((ushort)ClientToServerMessages.TravelFinished)]
+    private static void TravelFinished(ushort sender, Message message)
+    {
+        foreach (var player in PlayerManager.Instance.Players.Values)
+        {
+            if (player.ConnectedInMap)
+            {
+                Instance.SendMapSpawnMessage(sender, player);
+            }
+        }
+        Instance.SendMapSpawnMessage(sender);
+        Instance.GetPlayer(sender).ConnectedInMap = true;
+    }
+
+    private void SendMapSpawnMessage(ushort receiver, Player.Player player)
+    {
+        var message = GetSpawnMessage(player.PlayerId);
+        NetworkManager.Instance.Server.Send(message, receiver);
+    }
+
+    private void SendMapSpawnMessage(ushort sender)
+    {
+        NetworkManager.Instance.Server.SendToAll(GetSpawnMessage(sender));
+    }
+
+    private Message GetSpawnMessage(ushort clientToSpawn)
+    {
+        var message = Message.Create(MessageSendMode.Reliable, (ushort)ServerToClientMessages.SpawnInMap);
+        var player = GetPlayer(clientToSpawn);
+        message.AddUShort(clientToSpawn);
+        message.AddVector3(player.gameObject.transform.position);
+        message.AddQuaternion(player.gameObject.transform.rotation);
+        return message;
+
     }
 }

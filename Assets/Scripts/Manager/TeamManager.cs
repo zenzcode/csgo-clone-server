@@ -15,7 +15,6 @@ namespace Manager
         protected override void Awake()
         {
             base.Awake();
-            DontDestroyOnLoad(this);
             _teamMembers = new Dictionary<Team, List<ushort>>
             {
                 { Team.Attacker, new List<ushort>() },

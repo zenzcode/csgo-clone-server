@@ -13,5 +13,7 @@ namespace Player
         [HideInInspector] public Team Team = Enums.Team.None;
         [HideInInspector] public bool IsLeader = false;
         [HideInInspector] public float LastKnownRtt = 1;
+        [HideInInspector] public bool ConnectedInMap = false;
+        [SerializeField] public float PlayerHeight = 1f;
     }
 }

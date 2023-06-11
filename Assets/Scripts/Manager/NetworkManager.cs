@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Enums;
 using Helper;
+using Player;
 using Riptide;
 using Riptide.Utils;
 using UnityEngine;
@@ -15,10 +16,11 @@ namespace Manager
 
         private float _startupTime;
 
+        private uint _tick = 0;
+
         protected override void Awake()
         {
             base.Awake();
-            DontDestroyOnLoad(this);
             
 #if UNITY_EDITOR
             RiptideLogger.Initialize(Debug.Log, Debug.Log, Debug.LogWarning, Debug.LogError, true);
@@ -33,17 +35,31 @@ namespace Manager
         private void Start()
         {
             _startupTime = Time.timeSinceLevelLoad;
+            InvokeRepeating(nameof(UpdateTick), 0f, 1f);
         }
 
         private void FixedUpdate()
         {
+            _tick++;
             Server.Update();
+
+            if (_tick == uint.MaxValue)
+            {
+                Server.Stop();
+            }
         }
 
         private void OnApplicationQuit()
         {
             Server.Stop();
             Server.ClientDisconnected -= Server_ClientDisconnected;
+        }
+
+        private void UpdateTick()
+        {
+            var message = Message.Create(MessageSendMode.Unreliable, (ushort)ServerToClientMessages.TickUpdated);
+            message.AddUInt(_tick);
+            Server.SendToAll(message);
         }
 
         private void Server_ClientDisconnected(object o, ServerDisconnectedEventArgs eventArgs)
@@ -72,7 +88,6 @@ namespace Manager
         private static void RttRequest(ushort sender, Message message)
         {
             var response = Message.Create(MessageSendMode.Unreliable, (ushort)ServerToClientMessages.RTTAnswer);
-            //TODO: Add Tick later to recognize lost package.
             response.AddFloat(message.GetFloat());
             response.AddFloat(Instance._startupTime);
             response.AddFloat(Time.timeSinceLevelLoad);
