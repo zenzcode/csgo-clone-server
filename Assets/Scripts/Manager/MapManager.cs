@@ -21,7 +21,7 @@ namespace Managers
                 {
                     var availableSpawnPoints = AttackerSpawnPoints.Where(spawnpoint => !spawnpoint.IsOccupied).ToList();
                     var spawnPoint = availableSpawnPoints[Random.Range(0, availableSpawnPoints.Count - 1)];
-                    var spawnPos = spawnPoint.gameObject.transform.position + new Vector3(0f, player.PlayerHeight, 0f);
+                    var spawnPos = spawnPoint.gameObject.transform.position;
                     player.gameObject.transform.position = spawnPos;
                     spawnPoint.SetOccupied(true);
                 }
@@ -29,7 +29,7 @@ namespace Managers
                 {
                     var availableSpawnPoints = DefenderSpawnPoints.Where(spawnpoint => !spawnpoint.IsOccupied).ToList();
                     var spawnPoint = availableSpawnPoints[Random.Range(0, availableSpawnPoints.Count - 1)];
-                    var spawnPos = spawnPoint.gameObject.transform.position + new Vector3(0f, player.PlayerHeight, 0f);
+                    var spawnPos = spawnPoint.gameObject.transform.position;
                     player.gameObject.transform.position = spawnPos;
                     spawnPoint.SetOccupied(true);
                 }
