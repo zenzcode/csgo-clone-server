@@ -94,13 +94,17 @@ namespace Managers
             {
                 var runningTimer = _runningTimer[i];
                 runningTimer.RemainingSeconds -= (1 * Time.deltaTime);
+                Debug.Log($"REMAINING FOR {runningTimer.Timer} = {runningTimer.RemainingSeconds}");
 
-                if(runningTimer.RemainingSeconds < 0)
+                if (runningTimer.RemainingSeconds <= 0)
                 {
                     HandleTimerComplete(runningTimer.Timer);
                     EventHandler.Instance.CallTimerFinished(runningTimer.Timer);
                     _runningTimer.RemoveAt(i);
+                    continue;
                 }
+
+                _runningTimer[i] = runningTimer;
             }
         }
 
@@ -109,6 +113,7 @@ namespace Managers
             //On Lobby Timer Complete
             if (timer == Enums.Timer.LobbyTimer)
             {
+                
                 GameManager.Instance.SetGameState(GameState.Warmup);
                 GameManager.Instance.SendTravelSignal();
             }
