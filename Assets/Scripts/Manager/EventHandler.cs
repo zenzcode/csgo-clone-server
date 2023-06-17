@@ -23,9 +23,9 @@ namespace Manager
             ClientDisconnected?.Invoke(clientId);
         }
 
-        public Action<Timer> TimerFinished;
+        public Action<Enums.Timer> TimerFinished;
 
-        public void CallTimerFinished(Timer timer)
+        public void CallTimerFinished(Enums.Timer timer)
         {
             TimerFinished?.Invoke(timer);
         }
