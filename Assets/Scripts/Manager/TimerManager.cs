@@ -4,6 +4,7 @@ using Manager;
 using Riptide;
 using System.Collections.Generic;
 using System.Linq;
+using Misc;
 using TimerManagement;
 using UnityEngine;
 
@@ -70,6 +71,11 @@ namespace Managers
             switch (timer)
             {
                 case Enums.Timer.LobbyTimer:
+                    //Dont start timer when we are less than min players
+                    if (PlayerManager.Instance.GetPlayerCount() < Statics.MinPlayerCount)
+                    {
+                        return;
+                    }
                     message.AddInt(Statics.LobbyTime);
                     newRunningTimer.RemainingSeconds = Statics.LobbyTime;
                     GameManager.Instance.SetGameState(GameState.PreparingGame);

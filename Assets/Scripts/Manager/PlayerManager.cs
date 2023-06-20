@@ -41,6 +41,11 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         return _players.Values.FirstOrDefault(p => p.PlayerId == clientId);
     }
 
+    public int GetPlayerCount()
+    {
+        return _players.Count;
+    }
+
     public Player.Player GetCurrentLeader()
     {
         return _players.FirstOrDefault(player => player.Value.IsLeader).Value;

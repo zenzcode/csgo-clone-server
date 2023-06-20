@@ -1,4 +1,8 @@
-public static class Statics
+namespace Misc
 {
-    public static int LobbyTime = 10;
+    public static class Statics
+    {
+        public const int LobbyTime = 10;
+        public const int MinPlayerCount = 2;
+    }
 }
