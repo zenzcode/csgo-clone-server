@@ -51,6 +51,21 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         return _players.FirstOrDefault(player => player.Value.IsLeader).Value;
     }
 
+    public void RemoveVisualRepresentations()
+    {
+        foreach (var player in _players.Values)
+        {
+            var controller = player.gameObject.GetComponentInChildren<PlayerController>();
+
+            if (!controller)
+                continue;
+
+            player.gameObject.transform.position = Vector3.zero;
+            
+            Destroy(controller.gameObject);
+        }
+    }
+    
     private void EventHandler_PlayerSetup(ushort clientId, string username)
     {
         if (_players.ContainsKey(clientId))
@@ -64,7 +79,6 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
             SendSpawnMessage(clientId, p);
         }
 
-        //TODO: CHECK GAME STATE (LOBBY/INGAME)
         var newPlayer = Instantiate(AssetManager.Instance.LobbyPlayer);
 
         if (!newPlayer.TryGetComponent<Player.Player>(out var player))
@@ -79,6 +93,12 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         newPlayer.name = $"{player.Username} ({player.PlayerId})";
         _players.Add(clientId, player);
         SendSpawnMessage(player);
+        
+        if (GameManager.Instance.State != GameState.Lobby)
+        {
+            var connectedId = clientId;
+            NetworkManager.Instance.Server.DisconnectClient(clientId);
+        }
     }
 
     private string GetUniqueUsername(string username, Player.Player player)

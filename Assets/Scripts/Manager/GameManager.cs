@@ -12,6 +12,7 @@ namespace Manager
     public class GameManager : SingletonMonoBehavior<GameManager>
     {
         public GameState State { get; private set; } = GameState.Lobby;
+        
 
         [SerializeField] private MapSO _map;
 
@@ -33,6 +34,11 @@ namespace Manager
         public void LoadSelectedMap()
         {
             SceneManager.LoadSceneAsync(_map.PathToMap, LoadSceneMode.Additive);
+        }
+
+        public string GetSelectedMapSceneName()
+        {
+            return _map.PathToMap;
         }
     }
 

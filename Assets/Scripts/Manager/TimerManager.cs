@@ -1,3 +1,4 @@
+using System;
 using Enums;
 using Helper;
 using Manager;
@@ -7,6 +8,8 @@ using System.Linq;
 using Misc;
 using TimerManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using EventHandler = Manager.EventHandler;
 
 namespace TimerManagement
 {
@@ -28,6 +31,28 @@ namespace Managers
         {
             base.Awake();
             _runningTimer = new List<RunningTimer>();
+        }
+
+        private void OnEnable()
+        {
+            EventHandler.Instance.ClientDisconnected += EventHandler_ClientDisconnected;
+        }
+
+        private void OnDisable()
+        {
+            EventHandler.Instance.ClientDisconnected -= EventHandler_ClientDisconnected;
+        }
+
+        private void EventHandler_ClientDisconnected(ushort clientId)
+        {
+            if (IsTimerRunning(Timer.LobbyTimer))
+            {
+                if (PlayerManager.Instance.GetPlayerCount() < Statics.MinPlayerCount)
+                {
+                    StopTimer(Timer.LobbyTimer);
+                    PlayerManager.Instance.RemoveVisualRepresentations();
+                }
+            }
         }
 
         [MessageHandler((ushort)ClientToServerMessages.StartTimerRequest)]
@@ -89,6 +114,13 @@ namespace Managers
             _runningTimer.Add(newRunningTimer);
         }
 
+        private void SendTimerStopMessage(Timer timer)
+        {
+            var message = Message.Create(MessageSendMode.Reliable, (ushort)ServerToClientMessages.TimerAborted);
+            message.AddUShort((ushort)timer);
+            NetworkManager.Instance.Server.SendToAll(message);
+        }
+
         private void Update()
         {
             if (!IsAnyTimerActive())
@@ -125,6 +157,34 @@ namespace Managers
             }
         }
 
+        private void StopTimer(Timer timer)
+        {
+            if (!IsTimerRunning(timer))
+            {
+                return;
+            }
+
+            SendTimerStopMessage(timer);
+            _runningTimer = _runningTimer.Where(runningTimer => runningTimer.Timer != timer).ToList();
+            HandleTimerStop(timer);
+        }
+
+        private void HandleTimerStop(Timer timer)
+        {
+            switch (timer)
+            {
+                case Timer.LobbyTimer:
+                    if (SceneManager.GetSceneByName(GameManager.Instance.GetSelectedMapSceneName()).isLoaded)
+                    {
+                        SceneManager.UnloadSceneAsync(GameManager.Instance.GetSelectedMapSceneName());
+                    }
+                    GameManager.Instance.SetGameState(GameState.Lobby);
+                    break;
+                default:
+                    break;
+            }
+        }
+        
         private bool IsTimerRunning(Enums.Timer timer)
         {
             return _runningTimer.Any(t => t.Timer == timer);
