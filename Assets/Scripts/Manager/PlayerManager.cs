@@ -8,6 +8,7 @@ using Enums;
 using Helper;
 using Manager;
 using Player;
+using Player.Controller;
 using Riptide;
 using UnityEngine;
 
