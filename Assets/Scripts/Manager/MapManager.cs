@@ -1,6 +1,7 @@
 using Assets;
 using Helper;
 using Maps.SpawnPoint;
+using Player.Controller;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,7 +35,14 @@ namespace Managers
                     spawnPoint.SetOccupied(true);
                 }
 
-                Instantiate(AssetManager.Instance.GamePlayer, player.transform);
+                var playerObject = Instantiate(AssetManager.Instance.GamePlayer, player.transform);
+
+                if (!playerObject.TryGetComponent<PlayerController>(out var playerController))
+                {
+                    return;
+                }
+
+                playerController.Owner = player;
             }
         }
     }

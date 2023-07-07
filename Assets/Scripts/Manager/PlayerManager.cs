@@ -194,17 +194,16 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
         if(_usedNicks.ContainsKey(player.InitialUsername))
         {
             var kvp = _usedNicks[player.InitialUsername].FirstOrDefault(keyvalue => keyvalue.Value == player);
-            if(kvp.Value == null)
+            if(kvp.Value != null)
             {
-                return;
-            }
-            var num = kvp.Key;
-            _usedNicks[player.InitialUsername][num] = null;
+                var num = kvp.Key;
+                _usedNicks[player.InitialUsername][num] = null;
 
-            //remove if no more duplicates
-            if (!_usedNicks[player.InitialUsername].Any(kvp => kvp.Value != null))
-            {
-                _usedNicks.Remove(player.InitialUsername);
+                //remove if no more duplicates
+                if (!_usedNicks[player.InitialUsername].Any(kvp => kvp.Value != null))
+                {
+                    _usedNicks.Remove(player.InitialUsername);
+                }
             }
         }
 
@@ -222,13 +221,6 @@ public class PlayerManager : SingletonMonoBehavior<PlayerManager>
     [MessageHandler((ushort)ClientToServerMessages.TravelFinished)]
     private static void TravelFinished(ushort sender, Message message)
     {
-        foreach (var player in PlayerManager.Instance.Players.Values)
-        {
-            if (player.ConnectedInMap)
-            {
-                Instance.SendMapSpawnMessage(sender, player);
-            }
-        }
         Instance.SendMapSpawnMessage(sender);
         Instance.GetPlayer(sender).ConnectedInMap = true;
     }

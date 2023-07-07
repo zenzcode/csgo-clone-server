@@ -103,6 +103,7 @@ namespace Manager
                 return;
             
             player.LastKnownRtt = newRtt;
+            player.LastRttUpdateTime = Time.realtimeSinceStartup;
             Instance.SendRttUpdateMessage(senderId, newRtt);
         }
 
