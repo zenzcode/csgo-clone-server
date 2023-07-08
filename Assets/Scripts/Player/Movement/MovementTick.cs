@@ -12,11 +12,14 @@ namespace Player.Movement
         public Vector3 StartPosition;
         public Vector3 EndPosition;
         public int Input;
-        public Vector3 EulerAngles;
-        public Vector3 EndEulerAngles;
+        public float Yaw;
+        public float Pitch;
+        public float EndYaw;
+        public float EndPitch;
         public float MouseDeltaX;
         public float MouseDeltaY;
         public float DeltaTime;
+        public float Sensitivity;
 
         public void Deserialize(Message message)
         {
@@ -25,11 +28,14 @@ namespace Player.Movement
             StartPosition = message.GetVector3();
             EndPosition = message.GetVector3();
             Input = message.GetInt();
-            EulerAngles = message.GetVector3();
-            EndEulerAngles = message.GetVector3();
+            Yaw = message.GetFloat();
+            EndYaw = message.GetFloat();
+            Pitch = message.GetFloat();
+            EndPitch = message.GetFloat();
             MouseDeltaX = message.GetFloat();
             MouseDeltaY = message.GetFloat();
             DeltaTime = message.GetFloat();
+            Sensitivity = message.GetFloat();
         }
 
         public void Serialize(Message message)

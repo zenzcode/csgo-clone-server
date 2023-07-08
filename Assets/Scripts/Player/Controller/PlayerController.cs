@@ -1,4 +1,5 @@
 using Enums;
+using Manager;
 using Player.Movement;
 using Riptide;
 using System.Collections;
@@ -41,16 +42,43 @@ namespace Player.Controller
 
             var movementTick = message.GetSerializable<MovementTick>();
 
-            var result = CalculateLook(movementTick.MouseDeltaX, movementTick.MouseDeltaY, movementTick.DeltaTime, 10);
+            CalculateLook(movementTick.MouseDeltaX, movementTick.MouseDeltaY, movementTick.DeltaTime, movementTick.Sensitivity);
+            //CalculateMove();
+            SendMovementResult(movementTick);
         }
 
-        private Quaternion CalculateLook(float mouseDeltaX, float mouseDeltaY, float DeltaTime, float sensitivity)
+        private void CalculateLook(float mouseDeltaX, float mouseDeltaY, float DeltaTime, float sensitivity)
         {
             _yaw += mouseDeltaX * DeltaTime * sensitivity;
             _pitch = Mathf.Clamp(_pitch - (mouseDeltaY * DeltaTime * sensitivity), -89, 89);
             Owner.transform.rotation = Quaternion.Euler(Owner.transform.rotation.x, _yaw, Owner.transform.rotation.z);
+        }
 
-            return Owner.transform.rotation;
+        private void SendMovementResult(MovementTick movementTick)
+        {
+            var message = Message.Create(MessageSendMode.Reliable, (ushort)ServerToClientMessages.TickResult);
+
+            var movementTickResult = new MovementTickResult
+            {
+                Tick = movementTick.Tick,
+                ClientId = movementTick.ClientId,
+                StartPosition = movementTick.StartPosition,
+                PassedEndPosition = movementTick.EndPosition,
+                ActualEndPosition = Owner.transform.position,
+                StartYaw = movementTick.Yaw,
+                PassedEndYaw = movementTick.EndYaw,
+                ActualEndYaw = _yaw,
+                StartPitch = movementTick.Pitch,
+                PassedEndPitch = movementTick.EndPitch,
+                ActualEndPitch = _pitch,
+                DeltaTime = movementTick.DeltaTime,
+                Sensitivity = movementTick.Sensitivity,
+                Input = movementTick.Input
+            };
+
+            message.Add(movementTickResult);
+
+            NetworkManager.Instance.Server.SendToAll(message);
         }
     }
 }
