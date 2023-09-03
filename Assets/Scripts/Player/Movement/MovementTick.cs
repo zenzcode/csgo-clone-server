@@ -20,6 +20,8 @@ namespace Player.Movement
         public float MouseDeltaY;
         public float DeltaTime;
         public float Sensitivity;
+        public bool CrouchDown;
+        public bool SlowWalkDown;
 
         public void Deserialize(Message message)
         {
@@ -36,6 +38,8 @@ namespace Player.Movement
             MouseDeltaY = message.GetFloat();
             DeltaTime = message.GetFloat();
             Sensitivity = message.GetFloat();
+            CrouchDown = message.GetBool();
+            SlowWalkDown = message.GetBool();
         }
 
         public void Serialize(Message message)

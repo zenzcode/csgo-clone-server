@@ -15,7 +15,11 @@ namespace Player.Controller
 
         private float _yaw = 0, _pitch = 0;
 
-        [SerializeField] private float movementSpeed = 10;
+        [SerializeField] private float defaultMovementSpeed = 6;
+
+        [SerializeField] private float crouchMovementSpeed = 3;
+
+        [SerializeField] private float slowWalkMovementSpeed = 3;
 
         [SerializeField] private LayerMask playerLayer;
 
@@ -27,10 +31,15 @@ namespace Player.Controller
 
         private Collider[] collisions = new Collider[10];
 
+        private PlayerMovementState _playerMovementState = PlayerMovementState.Default;
+
+        private float _movementSpeed = 0;
+
         private void Awake()
         {
             _rigidbody = GetComponent<Rigidbody>();
             _capsuleCollider = GetComponent<CapsuleCollider>();
+            _movementSpeed = defaultMovementSpeed;
         }
 
         [MessageHandler((ushort)ClientToServerMessages.Tick)]
@@ -60,6 +69,23 @@ namespace Player.Controller
             }
 
             var movementTick = message.GetSerializable<MovementTick>();
+
+            if(movementTick.CrouchDown)
+            {
+                _playerMovementState = PlayerMovementState.Crouching;
+                _movementSpeed = crouchMovementSpeed;
+            }
+            else if(movementTick.SlowWalkDown)
+            {
+                _playerMovementState = PlayerMovementState.SlowWalk;
+                _movementSpeed = slowWalkMovementSpeed;
+            }
+            else
+            {
+                _playerMovementState = PlayerMovementState.Default;
+                _movementSpeed = defaultMovementSpeed;
+            }
+
             _lastStartPos = Owner.transform.position;
             CalculateLook(movementTick.MouseDeltaX, movementTick.MouseDeltaY, movementTick.DeltaTime, movementTick.Sensitivity);
             CalculateMove( movementTick.Input, movementTick.DeltaTime);
@@ -79,7 +105,7 @@ namespace Player.Controller
 
             Vector3 moveVector = Owner.transform.forward * pressedInputs.y + Owner.transform.right * pressedInputs.x;
             
-            Vector3 targetPosition = Owner.transform.position + moveVector * movementSpeed * deltaTime;
+            Vector3 targetPosition = Owner.transform.position + moveVector * _movementSpeed * deltaTime;
 
             Array.Clear(collisions, 0, collisions.Length);
 
@@ -154,7 +180,8 @@ namespace Player.Controller
                 ActualEndPitch = _pitch,
                 DeltaTime = movementTick.DeltaTime,
                 Sensitivity = movementTick.Sensitivity,
-                Input = movementTick.Input
+                Input = movementTick.Input,
+                PlayerMovementState = _playerMovementState
             };
 
             message.Add(movementTickResult);
