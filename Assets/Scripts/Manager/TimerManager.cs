@@ -62,7 +62,6 @@ namespace Managers
             var timer = (Enums.Timer)message.GetUShort();
             Instance.TryStartTimer(senderId, timer);
         }
-
         public void StartServerTimer(Enums.Timer timer)
         {
             if (IsTimerRunning(timer))
